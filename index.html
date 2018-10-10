@@ -12,13 +12,10 @@
     <title>Earthquake data</title>
 
     <style>
-        /* Always set the map height explicitly to define the size of the div
-         * element that contains the map. */
         #map {
             height: 85%;
         }
 
-        /* Optional: Makes the sample page fill the window. */
         html, body {
             height: 100%;
             margin: 0;
@@ -48,7 +45,7 @@
         map = new google.maps.Map(document.getElementById('map'), {
             center: {lat: 25.695665, lng: -100.327796},
             zoom: 4
-        });
+        }); 
 
         var geocoder = new google.maps.Geocoder();
         $("#submit").click(function () {
@@ -72,7 +69,7 @@
         });
     }
 
-    function earthquakeData(coordinates, resultsMap) {
+    function earthquakeData(coordinates) {
         $.ajax({
             url: 'http://api.geonames.org/earthquakesJSON',
             type: "GET",
