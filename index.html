@@ -10,14 +10,123 @@
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
     <title>Earthquake data</title>
+
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+         * element that contains the map. */
+        #map {
+            height: 85%;
+        }
+
+        /* Optional: Makes the sample page fill the window. */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </head>
 <body>
-<h1>Earthquake data</h1>
+<div class="container-fluid">
+    <h1>Earthquake data</h1>
 
+    <div class="input-group mb-3">
+        <input id="location" type="text" class="form-control" placeholder="Name of the city"
+               aria-label="Recipient's username"
+               aria-describedby="button-addon2">
+        <div class="input-group-append">
+            <button id="submit" class="btn btn-outline-secondary" type="button">Enter</button>
+        </div>
+    </div>
+</div>
 
-<!-- jQuery, Popper.js, Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+<div id="map"></div>
+<script>
+    var map;
+
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 25.695665, lng: -100.327796},
+            zoom: 4
+        });
+
+        var geocoder = new google.maps.Geocoder();
+        $("#submit").click(function () {
+            geocodeLocation(geocoder, map)
+        });
+    }
+
+    function geocodeLocation(geocoder, resultsMap) {
+        var address = $('#location').val();
+        geocoder.geocode({'address': address}, function (results, status) {
+            if (status === 'OK') {
+                var coordinates = results[0].geometry.viewport;
+                var northEast = new google.maps.LatLng(coordinates.f.f, coordinates.b.f);
+                var southWest = new google.maps.LatLng(coordinates.f.b, coordinates.b.b);
+                var bounds = new google.maps.LatLngBounds(southWest, northEast);
+                resultsMap.fitBounds(bounds);
+                earthquakeData(coordinates);
+            } else {
+                alert("Your search didn't have results");
+            }
+        });
+    }
+
+    function earthquakeData(coordinates, resultsMap) {
+        $.ajax({
+            url: 'http://api.geonames.org/earthquakesJSON',
+            type: "GET",
+            data: {
+                north: coordinates.f.f,
+                south: coordinates.f.b,
+                east: coordinates.b.f,
+                west: coordinates.b.b,
+                username: "mimien"
+            },
+            success: function (data) {
+                var eartquakes = data.earthquakes;
+                var limit = (eartquakes.length > 10) ? 10 : eartquakes.length;
+                var contentStrings = [];
+                for (var i = 0; i < limit; i++) {
+                    var dateTime = eartquakes[i].datetime.split(" ");
+
+                    contentStrings.push('<div id="content">' +
+                        '<div id="siteNotice">' +
+                        '</div>' +
+                        '<h4 id="firstHeading" class="firstHeading">Earthquake</h4>' +
+                        '<div id="bodyContent">' +
+                        '<p><b>Date: </b>' + dateTime[0] +
+                        '<br><b>Time: </b>' + dateTime[1] +
+                        '<br><b>Magnitude: </b>' + eartquakes[i].magnitude +
+                        '<br><b>Depth: </b>' + eartquakes[i].depth + '</p>' +
+                        '</div>');
+
+                    var infowindow = new google.maps.InfoWindow();
+
+                    var marker = new google.maps.Marker({
+                        position: {lat: eartquakes[i].lat, lng: eartquakes[i].lng},
+                        map: map
+                    });
+
+                    google.maps.event.addListener(marker, 'click', (function (marker, i) {
+                        return function () {
+                            infowindow.setContent(contentStrings[i]);
+                            infowindow.open(map, marker);
+                        }
+                    })(marker, i));
+                }
+            },
+            error: function (xhr) {
+                alert(xhr);
+            }
+        });
+    }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCbPa4XCTfAYmCPf9EyYN7QNt86doNzMF4&callback=initMap"
+        async defer></script>
+<!-- jQuery, Popper.js, Bootstrap JS, Google maps API -->
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
         integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
@@ -25,5 +134,6 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
         integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
         crossorigin="anonymous"></script>
+
 </body>
 </html>
